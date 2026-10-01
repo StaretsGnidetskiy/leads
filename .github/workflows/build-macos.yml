@@ -1,0 +1,37 @@
+name: Build macOS App
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller pillow requests
+
+      - name: Convert icon to .icns
+        run: |
+          python -c "from PIL import Image; img = Image.open('icon.jpg'); img.save('icon.icns', format='ICNS')"
+
+      - name: Build .app with PyInstaller
+        run: |
+          pyinstaller --onedir --windowed --icon=icon.icns --name "CatCutClient" client.py
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CatCutClient-macOS
+          path: dist/CatCutClient.app
