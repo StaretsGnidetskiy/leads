@@ -7,13 +7,13 @@ on:
 
 jobs:
   build-macos:
-    runs-on: macos-15-intel          # ← Intel (x86_64)
+    runs-on: macos-15-intel          # Intel (x86_64) — под Mac 2017
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.11'
 
@@ -26,18 +26,40 @@ jobs:
         run: |
           python -c "from PIL import Image; img = Image.open('icon.jpg'); img.save('icon.icns', format='ICNS')"
 
-      - name: Build .app with PyInstaller
+      - name: Build binary with PyInstaller (no .app, no --windowed)
         run: |
-          pyinstaller --onedir --icon=icon.icns --name "CatCutClient" client.py
+          pyinstaller --onedir --name "CatCutClient" client.py
 
-      - name: Zip the .app
+      - name: Assemble distribution folder
+        run: |
+          set -e
+          cd dist
+          # PyInstaller создаёт dist/CatCutClient/ — переименуем в понятную папку
+          mv CatCutClient CatCutClient-macOS
+
+          # Создаём .command-лаунчер
+          cat > CatCutClient-macOS/CatCutClient.command << 'EOF'
+          #!/bin/bash
+          # Переходим в папку, где лежит этот .command
+          cd "$(dirname "$0")"
+          # Запускаем бинарник
+          ./CatCutClient
+          echo
+          echo "Нажмите Enter, чтобы закрыть..."
+          read
+          EOF
+
+          chmod +x CatCutClient-macOS/CatCutClient.command
+          chmod +x CatCutClient-macOS/CatCutClient
+
+      - name: Zip the distribution
         run: |
           cd dist
-          zip -r --symlinks CatCutClient-macOS-Intel.zip CatCutClient.app
+          zip -r --symlinks CatCutClient-macOS.zip CatCutClient-macOS
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: CatCutClient-macOS-Intel
-          path: dist/CatCutClient-macOS-Intel.zip
+          name: CatCutClient-macOS
+          path: dist/CatCutClient-macOS.zip
           if-no-files-found: error
