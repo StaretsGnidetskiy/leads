@@ -7,7 +7,7 @@ on:
 
 jobs:
   build-macos:
-    runs-on: macos-latest
+    runs-on: macos-15-intel          # ← Intel (x86_64)
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -30,19 +30,14 @@ jobs:
         run: |
           pyinstaller --onedir --windowed --icon=icon.icns --name "CatCutClient" client.py
 
-      - name: Verify .app structure
-        run: |
-          ls -la dist/
-          ls -la dist/CatCutClient.app/Contents/
-
-      - name: Zip the .app (important for macOS)
+      - name: Zip the .app
         run: |
           cd dist
-          zip -r --symlinks CatCutClient-macOS.zip CatCutClient.app
+          zip -r --symlinks CatCutClient-macOS-Intel.zip CatCutClient.app
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: CatCutClient-macOS
-          path: dist/CatCutClient-macOS.zip
+          name: CatCutClient-macOS-Intel
+          path: dist/CatCutClient-macOS-Intel.zip
           if-no-files-found: error
