@@ -46,9 +46,18 @@ jobs:
       - name: Clean attributes and sign
         run: |
           TARGET="dist/CatCutClient-macOS"
+
+          echo "=== Cleaning extended attributes ==="
           xattr -cr "$TARGET"
-          find "$TARGET" -type f -exec sh -c 'file "$1" | grep -q "Mach-O" && codesign --force --sign - "$1"' _ {} \;
-          codesign --force --deep --sign - "$TARGET"
+
+          echo "=== Signing all Mach-O files ==="
+          find "$TARGET" -type f -exec sh -c '
+            if file "$1" | grep -q "Mach-O"; then
+              codesign --force --sign - "$1" || echo "  skip: $1"
+            fi
+          ' _ {} \;
+
+          echo "=== Signature done ==="
 
       - name: Zip the distribution
         run: |
