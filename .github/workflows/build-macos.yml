@@ -30,8 +30,19 @@ jobs:
         run: |
           pyinstaller --onedir --windowed --icon=icon.icns --name "CatCutClient" client.py
 
+      - name: Verify .app structure
+        run: |
+          ls -la dist/
+          ls -la dist/CatCutClient.app/Contents/
+
+      - name: Zip the .app (important for macOS)
+        run: |
+          cd dist
+          zip -r --symlinks CatCutClient-macOS.zip CatCutClient.app
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: CatCutClient-macOS
-          path: dist/CatCutClient.app
+          path: dist/CatCutClient-macOS.zip
+          if-no-files-found: error
