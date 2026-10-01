@@ -28,7 +28,7 @@ jobs:
 
       - name: Build .app with PyInstaller
         run: |
-          pyinstaller --onedir --windowed --icon=icon.icns --name "CatCutClient" client.py
+          pyinstaller --onedir --icon=icon.icns --name "CatCutClient" client.py
 
       - name: Zip the .app
         run: |
