@@ -26,7 +26,7 @@ jobs:
         run: |
           python -c "from PIL import Image; img = Image.open('icon.jpg'); img.save('icon.icns', format='ICNS')"
 
-      - name: Build binary with PyInstaller (no .app, no --windowed)
+      - name: Build binary with PyInstaller (no --windowed)
         run: |
           pyinstaller --onedir --name "CatCutClient" client.py
 
@@ -34,15 +34,11 @@ jobs:
         run: |
           set -e
           cd dist
-          # PyInstaller создаёт dist/CatCutClient/ — переименуем в понятную папку
           mv CatCutClient CatCutClient-macOS
 
-          # Создаём .command-лаунчер
           cat > CatCutClient-macOS/CatCutClient.command << 'EOF'
           #!/bin/bash
-          # Переходим в папку, где лежит этот .command
           cd "$(dirname "$0")"
-          # Запускаем бинарник
           ./CatCutClient
           echo
           echo "Нажмите Enter, чтобы закрыть..."
@@ -51,6 +47,25 @@ jobs:
 
           chmod +x CatCutClient-macOS/CatCutClient.command
           chmod +x CatCutClient-macOS/CatCutClient
+
+      - name: Ad-hoc sign all Mach-O binaries (fixes "damaged" error)
+        run: |
+          set -e
+          TARGET="dist/CatCutClient-macOS"
+
+          echo "=== Signing all Mach-O files ==="
+          find "$TARGET" -type f -print0 | while IFS= read -r -d '' f; do
+            if file "$f" | grep -q "Mach-O"; then
+              echo "sign: $f"
+              codesign --force --sign - "$f" || echo "  (skip: $f)"
+            fi
+          done
+
+          echo "=== Signing bundle folder ==="
+          codesign --force --deep --sign - "$TARGET" || true
+
+          echo "=== Verifying signature ==="
+          codesign --verify --deep --strict --verbose=2 "$TARGET"
 
       - name: Zip the distribution
         run: |
